@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "predictor-viabilidad-financiera"
+version = "2.0.0"
+description = "Sistema de IA para predicción de viabilidad crediticia - Proyecto Universitario"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.9.0",
+    "pandas>=2.2.0",
+    "numpy>=1.26.0",
+    "scikit-learn>=1.5.0",
+    "xgboost>=2.1.0",
+    "lightgbm>=4.5.0",
+    "catboost>=1.2.7",
+    "imbalanced-learn>=0.12.0",
+    "shap>=0.46.0",
+    "python-multipart>=0.0.12",
+    "joblib>=1.4.0",
+    "mlxtend>=0.23.0",
+]
