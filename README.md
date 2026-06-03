@@ -239,6 +239,33 @@ Activation:      ReLU             ReLU             ReLU             ReLU        
 - **Early Stopping:** activado (validation_fraction=0.1)
 - **Total de parámetros:** consultar endpoint `/api/v1/algorithms/nn-architecture`
 
+## Despliegue en Render
+
+Este proyecto está configurado para desplegarse en **Render** (render.yaml incluido).
+
+### 1. Subir a GitHub
+```bash
+git remote add origin https://github.com/Jose404tgx/viabilidad_financiera.git
+git push -u origin main
+```
+
+### 2. Crear Web Service en Render
+1. Ir a [dashboard.render.com](https://dashboard.render.com) → New + → Web Service
+2. Conectar el repo `Jose404tgx/viabilidad_financiera`
+3. Render detectará automáticamente `render.yaml`
+4. O configurar manualmente:
+   - **Build Command:** `pip install -r backend/requirements.txt`
+   - **Start Command:** `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
+5. Hacer clic en **Create Web Service**
+
+### 3. Acceder
+Una vez desplegado, Render dará una URL como:
+```
+https://viabilidad-financiera.onrender.com
+```
+
+> **Nota**: En el plan gratuito de Render, el servicio se "duerme" tras 15 min de inactividad. La primera carga después de dormir tarda ~30 segundos en responder.
+
 ## Tecnologías
 
 - **Backend:** Python, FastAPI, scikit-learn, XGBoost, LightGBM, CatBoost, mlxtend

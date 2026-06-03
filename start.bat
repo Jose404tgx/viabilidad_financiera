@@ -1,7 +1,7 @@
 @echo off
 echo ============================================
-echo   FinPredict Pro - IA Financiera
-echo   Sistema de Prediccion de Viabilidad
+echo   Predictor de Viabilidad Financiera
+echo   Sistema de IA para Prediccion Crediticia
 echo ============================================
 echo.
 echo [1/3] Verificando dependencias...
