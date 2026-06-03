@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictor de Viabilidad Financiera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulse-ring { 0%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)} 70%{box-shadow:0 0 0 12px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
+        @keyframes fillBar { from{width:0%} to{width:var(--target)} }
+        .animate-float { animation: float 3s ease-in-out infinite }
+        .animate-fade-in { animation: fadeIn 0.6s ease-out both }
+        .pulse-ring { animation: pulse-ring 2s infinite }
+        .fill-bar { animation: fillBar 1.2s ease-out forwards }
+        html { scroll-behavior: smooth }
+        ::-webkit-scrollbar { width:6px }
+        ::-webkit-scrollbar-track { background:rgba(0,0,0,0.3) }
+        ::-webkit-scrollbar-thumb { background:rgba(16,185,129,0.4);border-radius:99px }
+        .score-ring { transition: stroke-dashoffset 1.8s ease-out }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans antialiased">
+<div x-data="app()" x-init="init()" class="min-h-screen bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08)_0%,transparent_60%)]">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-gray-950/90 backdrop-blur-xl border-b border-gray-800/50 px-4 lg:px-6 py-3">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-float">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">Predictor de Viabilidad Financiera</h1>
+                    <p class="text-[10px] text-gray-600">Sistema Experto con IA &mdash; Proyecto Universitario</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-[11px] text-gray-700 hidden md:inline">Modelo: <span class="text-emerald-400 font-semibold" x-text="modelName"></span></span>
+                <button @click="loadExample" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/50 border border-gray-700/50 rounded-lg text-[11px] text-gray-500 hover:text-gray-300 hover:border-gray-600 transition-all"><i data-lucide="copy" class="w-3 h-3"></i> Ejemplo</button>
+                <button @click="resetForm" class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/50 border border-gray-700/50 rounded-lg text-[11px] text-gray-500 hover:text-red-400 hover:border-red-500/30 transition-all"><i data-lucide="eraser" class="w-3 h-3"></i> <span class="hidden sm:inline">Nuevo</span></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="max-w-6xl mx-auto p-4 lg:p-8">
+
+        <!-- Hero -->
+        <div class="text-center mb-8 animate-fade-in" style="animation-delay:0.1s">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium mb-3">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-ring"></span>
+                IA en producci&oacute;n &mdash; 9 modelos entrenados
+            </div>
+            <h2 class="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-emerald-200 to-blue-200 bg-clip-text text-transparent">Eval&uacute;a tu viabilidad crediticia</h2>
+            <p class="text-sm text-gray-600 mt-2 max-w-lg mx-auto">Completa el formulario y la IA analizar&aacute; tu perfil financiero al instante usando <span class="text-emerald-400 font-medium" x-text="modelName"></span></p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
+
+            <!-- Formulario -->
+            <div class="lg:col-span-2 p-6 rounded-2xl bg-gray-900/60 border border-gray-800/50 backdrop-blur-sm animate-fade-in" style="animation-delay:0.2s">
+                <div class="flex items-center gap-2 mb-5">
+                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center"><i data-lucide="clipboard-list" class="w-4 h-4 text-emerald-400"></i></div>
+                    <h3 class="text-sm font-semibold text-gray-200">Datos del solicitante</h3>
+                </div>
+
+                <form @submit.prevent="predict" class="space-y-3.5">
+                    <template x-for="field in fields" :key="field.key">
+                        <div>
+                            <label class="block text-[11px] font-medium text-gray-500 mb-1">
+                                <span x-text="field.label"></span>
+                                <span x-show="field.required" class="text-emerald-500">*</span>
+                                <span x-show="field.unit" class="text-gray-700" x-text="'(' + field.unit + ')'"></span>
+                            </label>
+                            <div class="relative">
+                                <span x-show="field.prefix" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-medium" x-text="field.prefix"></span>
+                                <input :type="field.type" x-model="form[field.key]" :step="field.step || 'any'"
+                                    class="w-full px-3 py-2.5 bg-gray-800/50 border rounded-xl text-sm focus:outline-none focus:ring-1 transition-all placeholder:text-gray-700/50"
+                                    :class="[field.prefix ? 'pl-8' : '', errors[field.key] ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20']"
+                                    :placeholder="field.placeholder">
+                            </div>
+                            <p x-show="errors[field.key]" class="text-[10px] text-red-400 mt-1" x-text="errors[field.key]"></p>
+                        </div>
+                    </template>
+
+                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl text-sm font-semibold hover:from-emerald-400 hover:to-emerald-500 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" :disabled="loading">
+                        <span x-show="!loading"><i data-lucide="sparkles" class="w-4 h-4 inline"></i> Predecir viabilidad</span>
+                        <span x-show="loading"><i data-lucide="loader" class="w-4 h-4 inline animate-spin"></i> Analizando con IA...</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Resultados -->
+            <div class="lg:col-span-3 space-y-4" x-show="result">
+                <!-- Score + Prediccion -->
+                <div class="grid grid-cols-2 gap-4 animate-fade-in" style="animation-delay:0.3s">
+                    <div class="p-5 rounded-2xl bg-gray-900/60 border border-gray-800/50 backdrop-blur-sm text-center">
+                        <p class="text-[10px] text-gray-600 uppercase tracking-wider mb-3">Score Financiero</p>
+                        <div class="flex flex-col items-center relative">
+                            <svg viewBox="0 0 120 120" class="w-28 h-28 -rotate-90">
+                                <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="8"/>
+                                <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"
+                                    :style="'stroke-dasharray: 326.7; stroke-dashoffset: ' + (326.7 - (result?.scoring?.total_score || 0) / 1000 * 326.7)"
+                                    class="score-ring"
+                                    :class="result?.scoring?.total_score >= 650 ? 'text-emerald-400' : result?.scoring?.total_score >= 450 ? 'text-amber-400' : 'text-red-400'"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <p class="text-2xl font-bold" :class="result?.scoring?.total_score >= 650 ? 'text-emerald-400' : result?.scoring?.total_score >= 450 ? 'text-amber-400' : 'text-red-400'" x-text="result?.scoring?.total_score || 0"></p>
+                                <p class="text-[10px] text-gray-600">/ 1000 pts</p>
+                            </div>
+                        </div>
+                        <p class="text-xs font-semibold uppercase mt-2" :class="result?.scoring?.total_score >= 650 ? 'text-emerald-400' : result?.scoring?.total_score >= 450 ? 'text-amber-400' : 'text-red-400'" x-text="result?.scoring?.classification"></p>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-gray-900/60 border border-gray-800/50 backdrop-blur-sm flex flex-col justify-center">
+                        <p class="text-[10px] text-gray-600 uppercase tracking-wider mb-2 text-center">Predicci&oacute;n del modelo</p>
+                        <div class="p-4 rounded-xl text-center" :class="result?.prediction?.label==='VIABLE' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'">
+                            <i :data-lucide="result?.prediction?.label==='VIABLE' ? 'check-circle' : 'x-circle'" class="w-10 h-10 mx-auto mb-1.5" :class="result?.prediction?.label==='VIABLE' ? 'text-emerald-400' : 'text-red-400'"></i>
+                            <p class="text-xl font-bold" :class="result?.prediction?.label==='VIABLE' ? 'text-emerald-400' : 'text-red-400'" x-text="result?.prediction?.label"></p>
+                        </div>
+                        <div class="mt-3 space-y-2 text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500">Confianza</span>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-20 h-1.5 rounded-full bg-gray-800"><div class="h-1.5 rounded-full bg-blue-500" :style="'width:' + (result?.prediction?.confidence || 0) + '%'"></div></div>
+                                    <span class="font-semibold text-blue-400 w-12 text-right" x-text="result?.prediction?.confidence + '%'"></span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between"><span class="text-gray-500">Decisi&oacute;n</span><span class="font-semibold text-emerald-400 truncate max-w-[180px]" x-text="result?.recommendations?.final_decision"></span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Nivel de riesgo</span><span class="font-semibold" :class="result?.recommendations?.risk_level==='Bajo' ? 'text-emerald-400' : result?.recommendations?.risk_level==='Moderado' ? 'text-amber-400' : 'text-red-400'" x-text="result?.recommendations?.risk_level"></span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Modelo utilizado</span><span class="font-semibold text-purple-400 text-[10px]" x-text="result?.prediction?.model_used"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Score Breakdown Chart -->
+                <div class="p-5 rounded-2xl bg-gray-900/60 border border-gray-800/50 backdrop-blur-sm animate-fade-in" style="animation-delay:0.4s">
+                    <h3 class="text-xs font-semibold text-gray-400 mb-3 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5 text-emerald-400"></i> Desglose del Score</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div>
+                            <template x-for="(item, key) in scoreBreakdown" :key="key">
+                                <div class="mb-2.5">
+                                    <div class="flex justify-between text-[11px] mb-1">
+                                        <span class="text-gray-500" x-text="item.label"></span>
+                                        <span class="font-medium" x-text="item.actual + '/' + item.max"></span>
+                                    </div>
+                                    <div class="h-2 rounded-full bg-gray-800/50 overflow-hidden">
+                                        <div class="h-2 rounded-full fill-bar transition-all" :style="'--target:' + (item.actual/item.max*100) + '%'" :class="item.color"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        <div>
+                            <canvas id="scoreBreakdownChart" class="max-h-48"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recomendaciones -->
+                <div class="p-5 rounded-2xl bg-gray-900/60 border border-gray-800/50 backdrop-blur-sm animate-fade-in" style="animation-delay:0.5s" x-show="result?.recommendations?.recommendations?.length">
+                    <h3 class="text-xs font-semibold text-gray-400 mb-3 flex items-center gap-2"><i data-lucide="lightbulb" class="w-3.5 h-3.5 text-amber-400"></i> Recomendaciones del sistema</h3>
+                    <div class="space-y-2">
+                        <template x-for="rec in result?.recommendations?.recommendations" :key="rec.action">
+                            <div class="flex items-start gap-3 p-3 rounded-xl" :class="rec.type==='danger' ? 'bg-red-500/8 border border-red-500/15' : rec.type==='warning' ? 'bg-amber-500/8 border border-amber-500/15' : rec.type==='success' ? 'bg-emerald-500/8 border border-emerald-500/15' : 'bg-blue-500/8 border border-blue-500/15'">
+                                <i :data-lucide="rec.type==='danger' ? 'alert-triangle' : rec.type==='warning' ? 'alert-circle' : rec.type==='success' ? 'check-circle' : 'info'" class="w-4 h-4 mt-0.5 shrink-0" :class="rec.type==='danger' ? 'text-red-400' : rec.type==='warning' ? 'text-amber-400' : rec.type==='success' ? 'text-emerald-400' : 'text-blue-400'"></i>
+                                <div>
+                                    <p class="text-xs font-semibold" x-text="rec.action"></p>
+                                    <p class="text-[11px] text-gray-600 mt-0.5 leading-relaxed" x-text="rec.description"></p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="p-4 rounded-2xl bg-gray-900/60 border border-gray-800/50 backdrop-blur-sm animate-fade-in" style="animation-delay:0.6s" x-show="result?.recommendations?.observations?.length">
+                    <h4 class="text-[11px] font-semibold text-amber-400 mb-2 flex items-center gap-1.5"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> Observaciones</h4>
+                    <template x-for="obs in result?.recommendations?.observations" :key="obs">
+                        <p class="text-[11px] text-gray-600 leading-relaxed" x-text="obs"></p>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Estado vacio -->
+            <div class="lg:col-span-3 flex flex-col items-center justify-center py-20 text-center animate-fade-in" x-show="!result && !loading" style="animation-delay:0.3s">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-blue-500/15 flex items-center justify-center mb-4 animate-float border border-emerald-500/10">
+                    <i data-lucide="brain" class="w-8 h-8 text-emerald-400"></i>
+                </div>
+                <p class="text-base font-medium text-gray-400">Ingresa tus datos financieros</p>
+                <p class="text-xs text-gray-700 mt-1.5 max-w-xs">Completa el formulario con tu informaci&oacute;n y el sistema de IA evaluar&aacute; tu perfil crediticio al instante</p>
+                <div class="flex gap-4 mt-6 text-[10px] text-gray-700">
+                    <span class="flex items-center gap-1"><i data-lucide="shield" class="w-3 h-3 text-emerald-500/50"></i> Datos seguros</span>
+                    <span class="flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-blue-500/50"></i> Respuesta inmediata</span>
+                    <span class="flex items-center gap-1"><i data-lucide="bar-chart-3" class="w-3 h-3 text-purple-500/50"></i> 9 modelos de IA</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800/50 mt-12 py-6 text-center text-[10px] text-gray-800">
+        <p>Predictor de Viabilidad Financiera &mdash; Proyecto de sustentaci&oacute;n semestral</p>
+        <p class="mt-1">Modelo principal: <span class="text-gray-700" x-text="modelName"></span> &middot; Precisi&oacute;n: 88.33% &middot; 600 registros de entrenamiento</p>
+    </footer>
+
+    <!-- Toast -->
+    <div x-show="toast.show" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+        class="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-medium flex items-center gap-2"
+        :class="toast.type==='success' ? 'bg-emerald-600/90 text-white backdrop-blur-sm' : 'bg-red-600/90 text-white backdrop-blur-sm'">
+        <i :data-lucide="toast.type==='success' ? 'check-circle' : 'alert-circle'" class="w-4 h-4"></i>
+        <span x-text="toast.message"></span>
+    </div>
+</div>
+
+<script>
+function app() {
+    return {
+        form: { ingreso_mensual: '', gastos: '', total_activos: '', total_deudas: '', num_deudas: '', monto_solicitado: '', plazo: '' },
+        errors: {},
+        result: null,
+        loading: false,
+        modelName: 'Cargando...',
+        toast: { show: false, message: '', type: 'success' },
+        chartInstance: null,
+
+        fields: [
+            { key: 'ingreso_mensual', label: 'Ingreso mensual', type: 'number', placeholder: '5000', prefix: 'S/', unit: 'soles', step: '0.01', required: true },
+            { key: 'gastos', label: 'Gastos mensuales', type: 'number', placeholder: '2500', prefix: 'S/', unit: 'soles', step: '0.01', required: true },
+            { key: 'total_activos', label: 'Valor total de bienes', type: 'number', placeholder: '120000', prefix: 'S/', unit: 'soles', step: '0.01', required: true },
+            { key: 'total_deudas', label: 'Deuda total', type: 'number', placeholder: '30000', prefix: 'S/', unit: 'soles', step: '0.01', required: true },
+            { key: 'num_deudas', label: 'N\u00famero de deudas', type: 'number', placeholder: '2', unit: 'activas', step: '1', required: true },
+            { key: 'monto_solicitado', label: 'Monto solicitado', type: 'number', placeholder: '25000', prefix: 'S/', unit: 'soles', step: '0.01', required: true },
+            { key: 'plazo', label: 'Plazo de pago', type: 'number', placeholder: '24', unit: 'meses', step: '1', required: true },
+        ],
+
+        get scoreBreakdown() {
+            if (!this.result?.scoring?.details) return [];
+            const labels = { ingreso:'Ingreso', gastos:'Gastos', deuda:'Deuda', excedente:'Excedente', capacidad:'Cap.Pago', num_deudas:'N\u00b0Deudas', mora:'Mora', endeudamiento:'Endeud.', capital:'Cap.Trabajo', carga:'Carga' };
+            const colors = { ingreso:'from-emerald-500 to-emerald-400', gastos:'from-red-500 to-red-400', deuda:'from-amber-500 to-amber-400', excedente:'from-blue-500 to-blue-400', capacidad:'from-purple-500 to-purple-400', num_deudas:'from-pink-500 to-pink-400', mora:'from-orange-500 to-orange-400', endeudamiento:'from-teal-500 to-teal-400', capital:'from-indigo-500 to-indigo-400', carga:'from-cyan-500 to-cyan-400' };
+            const maxVals = { ingreso:150, gastos:100, deuda:150, excedente:120, capacidad:100, num_deudas:80, mora:100, endeudamiento:100, capital:100, carga:100 };
+            return Object.entries(this.result.scoring.details).map(([k, v]) => ({
+                key: k, label: labels[k] || k, actual: v, max: maxVals[k] || 100,
+                color: 'bg-gradient-to-r ' + (colors[k] || 'from-gray-500 to-gray-400')
+            }));
+        },
+
+        init() {
+            this.fetchModelName();
+            this.$watch('result', val => { if (val) this.$nextTick(() => this.renderChart()); });
+            lucide.createIcons();
+        },
+
+        async apiCall(endpoint, method = 'GET', body = null) {
+            try {
+                const opts = { method, headers: { 'Content-Type': 'application/json' } };
+                if (body) opts.body = JSON.stringify(body);
+                const res = await fetch(window.location.origin + endpoint, opts);
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (e) { return null }
+        },
+
+        async fetchModelName() {
+            const r = await this.apiCall('/api/v1/health');
+            if (r) this.modelName = r.model_name || 'Random Forest';
+            else this.modelName = 'Random Forest';
+        },
+
+        showToast(msg, type = 'success') {
+            this.toast = { show: true, message: msg, type };
+            setTimeout(() => this.toast.show = false, 3500);
+        },
+
+        validate() {
+            const d = this.form, e = {};
+            if (!d.ingreso_mensual || parseFloat(d.ingreso_mensual) <= 0) e.ingreso_mensual = 'Ingresa tus ingresos mensuales';
+            if (d.gastos === '' || parseFloat(d.gastos) < 0) e.gastos = 'Ingresa tus gastos mensuales';
+            if (!d.total_activos || parseFloat(d.total_activos) < 0) e.total_activos = 'Ingresa el valor de tus bienes';
+            if (!d.total_deudas || parseFloat(d.total_deudas) < 0) e.total_deudas = 'Ingresa tu deuda total';
+            if (d.num_deudas === '' || parseInt(d.num_deudas) < 0) e.num_deudas = 'Indica cu\u00e1ntas deudas tienes';
+            if (!d.monto_solicitado || parseFloat(d.monto_solicitado) <= 0) e.monto_solicitado = 'Ingresa el monto a solicitar';
+            if (!d.plazo || parseInt(d.plazo) < 1) e.plazo = 'Indica el plazo en meses';
+            this.errors = e;
+            return Object.keys(e).length === 0;
+        },
+
+        async predict() {
+            this.errors = {};
+            if (!this.validate()) return;
+            this.loading = true;
+            this.result = null;
+            if (this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; }
+
+            const d = this.form;
+            const ingreso = parseFloat(d.ingreso_mensual);
+            const gastos = parseFloat(d.gastos);
+            const activos = parseFloat(d.total_activos);
+            const deudas = parseFloat(d.total_deudas);
+            const numDeudas = parseInt(d.num_deudas);
+            const monto = parseFloat(d.monto_solicitado);
+            const plazo = parseInt(d.plazo);
+            const tem = Math.min(0.08, Math.max(0.01, 0.02 + (monto / 50000) * 0.03));
+            const cuota = (monto > 0 && plazo > 0) ? monto * (tem * Math.pow(1 + tem, plazo)) / (Math.pow(1 + tem, plazo) - 1) : 0;
+            const excedente = ingreso - gastos;
+
+            const payload = {
+                ingreso_mensual: ingreso, total_gastos: gastos, total_costos: Math.round(gastos * 0.65),
+                total_activos: activos, total_deudas: deudas, num_deudas: numDeudas,
+                excedente: excedente, capacidad_pago: ingreso > 0 ? parseFloat((excedente / Math.max(cuota, 1)).toFixed(4)) : 0,
+                endeudamiento_patrimonial: activos > 0 ? parseFloat((deudas / activos).toFixed(4)) : 0,
+                capital_trabajo: activos - deudas, monto_solicitado: monto, tem: tem, num_cuotas: plazo,
+                cuota_estimada: parseFloat(cuota.toFixed(2)), monto_propuesto: Math.round(monto * 0.9), mora_diaria: 0,
+            };
+
+            const r = await this.apiCall('/api/v1/predict', 'POST', payload);
+            if (r?.success) { this.result = r; this.showToast('Evaluaci\u00f3n completada exitosamente'); }
+            else { this.showToast('Error al conectar con el servidor', 'error'); }
+            this.loading = false;
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        renderChart() {
+            const canvas = document.getElementById('scoreBreakdownChart');
+            if (!canvas || !this.result?.scoring?.details) return;
+            if (this.chartInstance) { this.chartInstance.destroy(); }
+            const labels = { ingreso:'Ingreso', gastos:'Gastos', deuda:'Deuda', excedente:'Excedente', capacidad:'Cap.Pago', num_deudas:'N\u00b0Deudas', mora:'Mora', endeudamiento:'Endeud.', capital:'Cap.Trabajo' };
+            const detail = this.result.scoring.details;
+            const data = Object.entries(detail).filter(([k]) => k in labels);
+            this.chartInstance = new Chart(canvas, {
+                type: 'radar',
+                data: {
+                    labels: data.map(([k]) => labels[k]),
+                    datasets: [{
+                        label: 'Score obtenido',
+                        data: data.map(([,v]) => v),
+                        backgroundColor: 'rgba(16,185,129,0.15)',
+                        borderColor: 'rgba(16,185,129,0.8)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(16,185,129,1)',
+                        pointRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 160,
+                            grid: { color: 'rgba(255,255,255,0.06)' },
+                            angleLines: { color: 'rgba(255,255,255,0.06)' },
+                            pointLabels: { color: '#9ca3af', font: { size: 9 } },
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        },
+
+        resetForm() {
+            this.form = { ingreso_mensual: '', gastos: '', total_activos: '', total_deudas: '', num_deudas: '', monto_solicitado: '', plazo: '' };
+            this.result = null;
+            this.errors = {};
+            if (this.chartInstance) { this.chartInstance.destroy(); this.chartInstance = null; }
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        loadExample() {
+            this.form = { ingreso_mensual: '5000', gastos: '2500', total_activos: '120000', total_deudas: '30000', num_deudas: '2', monto_solicitado: '25000', plazo: '24' };
+            this.$nextTick(() => lucide.createIcons());
+        },
+    }
+}
+</script>
+</body>
+</html>

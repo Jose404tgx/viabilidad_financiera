@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project-specific - cache files
+.pytest_cache/
+catboost_info/
+backend/catboost_info/
+
+# Models - these are generated, not committed
+backend/models_ml/*.pkl
+
+# Database
+backend/evaluations.db
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Environment
+.env
+*.env.local
