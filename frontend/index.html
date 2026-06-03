@@ -206,7 +206,18 @@
     <!-- Footer -->
     <footer class="border-t border-gray-800/50 mt-12 py-6 text-center text-[10px] text-gray-800">
         <p>Predictor de Viabilidad Financiera &mdash; Proyecto de sustentaci&oacute;n semestral</p>
-        <p class="mt-1">Modelo principal: <span class="text-gray-700" x-text="modelName"></span> &middot; Precisi&oacute;n: 88.33% &middot; 600 registros de entrenamiento</p>
+        <p class="mt-1">Modelo principal: <span class="text-gray-700" x-text="modelName"></span> &middot; 600 registros de entrenamiento &middot; 10 algoritmos de clasificaci&oacute;n</p>
+        <div class="mt-3 flex items-center justify-center gap-3">
+            <button @click="retrain()" :disabled="training"
+                class="px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-200 flex items-center gap-1.5"
+                :class="training ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed' : 'bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 hover:text-indigo-300 border border-indigo-600/30'">
+                <i data-lucide="refresh-cw" class="w-3 h-3" :class="training ? 'animate-spin' : ''"></i>
+                <span x-text="training ? 'Entrenando modelos...' : 'Reentrenar modelos'"></span>
+            </button>
+            <template x-if="trainingResult">
+                <span class="text-[10px]" :class="trainingResult.success ? 'text-emerald-500' : 'text-red-400'" x-text="trainingResult.message"></span>
+            </template>
+        </div>
     </footer>
 
     <!-- Toast -->
@@ -225,6 +236,8 @@ function app() {
         errors: {},
         result: null,
         loading: false,
+        training: false,
+        trainingResult: null,
         modelName: 'Cargando...',
         toast: { show: false, message: '', type: 'success' },
         chartInstance: null,
@@ -288,6 +301,21 @@ function app() {
             if (!d.plazo || parseInt(d.plazo) < 1) e.plazo = 'Indica el plazo en meses';
             this.errors = e;
             return Object.keys(e).length === 0;
+        },
+
+        async retrain() {
+            this.training = true;
+            this.trainingResult = null;
+            const r = await this.apiCall('/api/v1/admin/retrain', 'POST');
+            if (r?.success) {
+                this.trainingResult = { success: true, message: r.message || 'Modelo reentrenado exitosamente' };
+                this.showToast('Modelos reentrenados exitosamente');
+                await this.fetchModelName();
+            } else {
+                this.trainingResult = { success: false, message: 'Error al reentrenar modelos. En Render el proceso puede exceder el tiempo limite.' };
+                this.showToast('Error al reentrenar modelos', 'error');
+            }
+            this.training = false;
         },
 
         async predict() {
