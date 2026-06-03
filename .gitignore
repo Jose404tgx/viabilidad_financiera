@@ -23,9 +23,6 @@ env/
 catboost_info/
 backend/catboost_info/
 
-# Models - these are generated, not committed
-backend/models_ml/*.pkl
-
 # Database
 backend/evaluations.db
 
