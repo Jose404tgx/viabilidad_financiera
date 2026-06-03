@@ -3,6 +3,3 @@ services:
     name: viabilidad-financiera
     env: docker
     dockerfilePath: ./Dockerfile
-    envVars:
-      - key: PORT
-        value: 8000
